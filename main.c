@@ -40,35 +40,97 @@ int main(int argc, const char *argv[])
         int pid = fork();
 
         if(pid == 0){
-            unsigned char vn[1];
-            read(client_sock, vn, 1);
-            printf("vn %d\n", vn[0]);
-
-            unsigned char cd[1];
-            read(client_sock, cd, 1);
-            printf("cd %d\n", cd[0]);
-
-            unsigned char dst_port[2];
-            read(client_sock, dst_port, 2);
-            int port = ((int)dst_port[0]) << 8 | (int)dst_port[1];
-            printf("dst_port %d\n", port);
-
-            unsigned char dst_ip[4];
-            read(client_sock, dst_ip, 4);
-            int ip = ((int)dst_ip[0] << 24) | ((int)dst_ip[1] << 16) | ((int)dst_ip[2] << 8) | (int)dst_ip[3];
-            printf("dst_ip %d\n", ip);
-            printf("dst_ip %d.%d.%d.%d\n", dst_ip[0], dst_ip[1], dst_ip[2], dst_ip[3]);
+            unsigned char buffer[1024];
+            bzero(buffer, 1024);
+            read(client_sock, buffer, 1024);
+            unsigned char VN = buffer[0] ;
+            unsigned char CD = buffer[1] ;
+            unsigned int DST_PORT = buffer[2] << 8 | buffer[3] ;
+            unsigned int DST_IP = buffer[4] << 24 | buffer[5] << 16 | buffer[6] << 8 | buffer[7] ;
+            char* USER_ID = (char*)buffer + 8 ;
+            char* DOMAIN_NAME;
 
 
-            printf("data:\n");
-            char buff[1024];
-            bzero(buff, 1024);
-            while(read(client_sock, buff, 1024) != 0) {
-                printf("%s", buff);
-                bzero(buff, 1024);
+            printf("VN: %u\n", VN);
+            printf("CD: %u\n", CD);
+            printf("DST_PORT: %u\n", DST_PORT);
+            printf("DST_IP: %u\n", DST_IP);
+            printf("%u %u %u %u\n", buffer[4], buffer[5],  buffer[6], buffer[7]);
+            printf("USER_ID: %s\n", USER_ID);
+            if(buffer[4] == 0 && buffer[5] == 0 && buffer[6] == 0) {
+                DOMAIN_NAME = USER_ID + strlen(USER_ID) + 1;
+                printf("DOMAIN_NAME: %s\n", DOMAIN_NAME);
             }
 
+
+            // connect to http server
+            struct sockaddr_in server;
+            int sock = socket(AF_INET , SOCK_STREAM , 0);
+            char ip_addr[17]; //xxx.xxx.xxx.xxx
+            sprintf(ip_addr, "%u.%u.%u.%u", buffer[4], buffer[5],  buffer[6], buffer[7]);
+            server.sin_addr.s_addr = inet_addr(ip_addr);
+            server.sin_family = AF_INET;
+            server.sin_port = htons(DST_PORT);
+            int res = 90;
+            if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
+                res = 91;
+            }
+
+            printf("Make request:\n");
+            unsigned char package[8];
+            package[0] = 1;
+            package[1] = (unsigned char) res ; // 90 or 91
+            package[2] = DST_PORT / 256;
+            package[3] = DST_PORT % 256;
+            package[4] = DST_IP >> 24;
+            package[5] = (DST_IP >> 16) & 0xFF;
+            package[6] = (DST_IP >> 8)  & 0xFF;
+            package[7] = DST_IP & 0xFF;
+
+            for(int c=0; c<8; c++) {
+                printf("package[%d] = %u\n", c, package[c]);
+            }
+            write(client_sock, package, 8);
+
+            if(res == 90){
+                fd_set rfds, afds;
+                int nfds = sock>client_sock?sock+1:client_sock+1;
+                FD_ZERO(&afds);
+                FD_SET(sock, &afds);
+                FD_SET(client_sock, &afds);
+                while(1 == 1) {
+                    int len; // for read and write
+
+                    memcpy(&rfds, &afds, sizeof(rfds));
+
+                    if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
+                        perror("select error");
+                        fflush(stdout);
+                        close(sock);
+                        close(client_sock);
+                        return 0;
+                    }
+
+                    if(FD_ISSET(sock, &rfds)) {
+                        len = read(sock, buffer, 1024);
+                        if(len != 0){
+                            printf("Data read from sock: %d\n", len);
+                        }
+                        write(client_sock, buffer, len);
+                    } else if(FD_ISSET(client_sock, &rfds)) {
+                        len = read(client_sock, buffer, 1024);
+                        if(len != 0){
+                            printf("Data read from client sock: %d\n", len);
+                        }
+                        write(sock, buffer, len);
+                    }
+
+                }
+
+                close(sock);
+            }
             close(client_sock);
+
             return 0;
         }
     }
