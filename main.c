@@ -11,44 +11,67 @@
 #include <time.h>
 #include "passivesock.h"
 
-typedef unsigned char byte;
 
-struct header {
-	byte vn[1];
-	byte cd[1];
-	byte dst_port[2];
-	byte dst_ip[4];
-};
+void handleSIGCHLD() {
+    int stat;
 
-typedef struct header header_t;
+    /*Kills all the zombie processes*/
+    while(waitpid(-1, &stat, WNOHANG) > 0);
+    // while(wait3(&stat, WNOHANG, (struct rusage*)0)>=0);
+}
 
 int main(int argc, const char *argv[])
 {
-	
-    char port_str[5] = "2007";
-	int sc_fd = passivesock(port_str, "tcp", 5);
-	struct sockaddr_in client_addr;
-	int addrlen = sizeof(client_addr);
-	printf("accepting.....\n");
 
-	while(1 == 1){
-		int client_sock = accept(sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
-		header_t hd;
-		read(client_sock, &hd, sizeof(header_t));
-		printf("vn %d\n", hd.vn[0]);
-		printf("cd %d\n", hd.cd[0]);
-		int dst_port = (int)hd.dst_port[0] + (int)hd.dst_port[1];
-		printf("dst_port %d\n", dst_port);
-		int dst_ip = (int)hd.dst_ip[0] + (int)hd.dst_ip[1] + (int)hd.dst_ip[2] + (int)hd.dst_ip[3];
-		printf("dst_ip %d\n", dst_ip);
+    signal(SIGCHLD, handleSIGCHLD);
 
-		byte buff[1];
-		while(read(client_sock, buff, sizeof(byte)) != 0) {
-			printf("data: %d\n", buff);
-		}
+    srand(time(NULL));
+    int port = 2000 + rand() % 100;
+    printf("Port : %d\n", port);
+    char port_str[5];
+    sprintf(port_str, "%d", port);
+    int sc_fd = passivesock(port_str, "tcp", 5);
+    struct sockaddr_in client_addr;
+    int addrlen = sizeof(client_addr);
+    printf("accepting.....\n");
 
-		close(client_sock);
-	}
-	
-	return 0;
+    while(1 == 1){
+        int client_sock = accept(sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
+        int pid = fork();
+
+        if(pid == 0){
+            unsigned char vn[1];
+            read(client_sock, vn, 1);
+            printf("vn %d\n", vn[0]);
+
+            unsigned char cd[1];
+            read(client_sock, cd, 1);
+            printf("cd %d\n", cd[0]);
+
+            unsigned char dst_port[2];
+            read(client_sock, dst_port, 2);
+            int port = ((int)dst_port[0]) << 8 | (int)dst_port[1];
+            printf("dst_port %d\n", port);
+
+            unsigned char dst_ip[4];
+            read(client_sock, dst_ip, 4);
+            int ip = ((int)dst_ip[0] << 24) | ((int)dst_ip[1] << 16) | ((int)dst_ip[2] << 8) | (int)dst_ip[3];
+            printf("dst_ip %d\n", ip);
+            printf("dst_ip %d.%d.%d.%d\n", dst_ip[0], dst_ip[1], dst_ip[2], dst_ip[3]);
+
+
+            printf("data:\n");
+            char buff[1024];
+            bzero(buff, 1024);
+            while(read(client_sock, buff, 1024) != 0) {
+                printf("%s", buff);
+                bzero(buff, 1024);
+            }
+
+            close(client_sock);
+            return 0;
+        }
+    }
+    close(sc_fd);
+    return 0;
 }
