@@ -64,81 +64,123 @@ int main(int argc, const char *argv[])
             }
 
 
-            
-            // connect to http server
-            struct sockaddr_in server;
-            int sock = socket(AF_INET , SOCK_STREAM , 0);
-            char ip_addr[17]; //xxx.xxx.xxx.xxx
-            sprintf(ip_addr, "%u.%u.%u.%u", buffer[4], buffer[5],  buffer[6], buffer[7]);
-            server.sin_addr.s_addr = inet_addr(ip_addr);
-            server.sin_family = AF_INET;
-            server.sin_port = htons(DST_PORT);
-            int res = 90;
-            if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
-                res = 91;
-            }
-
-            printf("Make request:\n");
-            unsigned char package[8];
-            package[0] = 0;
-            package[1] = (unsigned char) res ; // 90 or 91
-            package[2] = DST_PORT / 256;
-            package[3] = DST_PORT % 256;
-            package[4] = DST_IP >> 24;
-            package[5] = (DST_IP >> 16) & 0xFF;
-            package[6] = (DST_IP >> 8)  & 0xFF;
-            package[7] = DST_IP & 0xFF;
-
-            for(int c=0; c<8; c++) {
-                printf("package[%d] = %u\n", c, package[c]);
-            }
-            write(client_sock, package, 8);
-
-            if(res == 90){
-                fd_set rfds, afds;
-                int nfds = sock>client_sock?sock+1:client_sock+1;
-                FD_ZERO(&afds);
-                FD_SET(sock, &afds);
-                FD_SET(client_sock, &afds);
-                while(1 == 1) {
-
-                    memcpy(&rfds, &afds, sizeof(rfds));
-
-                    if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
-                        perror("select error");
-                        fflush(stdout);
-                        //close(sock);
-                        close(client_sock);
-                        break;
-                    }
-                    bzero(buffer, 8192);
-                    if(FD_ISSET(sock, &rfds)) {
-                        len = read(sock, buffer, 8192);
-                        if(len > 0){
-                            printf("Data read from sock: %d\n", len);
-                            fflush(stdout);
-                            write(client_sock, buffer, len);
-                        }
-                        
-                    } else if(FD_ISSET(client_sock, &rfds)) {
-                        len = read(client_sock, buffer, 8192);
-                        if(len > 0){
-                            printf("Data read from client sock: %d\n", len);
-                            fflush(stdout);
-                            write(sock, buffer, len);
-                        }
-                        
-                    }
-
-                    //FD_ZERO(&rfds);
-
+            if(CD == 1){
+                // connect mode
+                // connect to http server
+                struct sockaddr_in server;
+                int sock = socket(AF_INET , SOCK_STREAM , 0);
+                char ip_addr[17]; //xxx.xxx.xxx.xxx
+                sprintf(ip_addr, "%u.%u.%u.%u", buffer[4], buffer[5],  buffer[6], buffer[7]);
+                server.sin_addr.s_addr = inet_addr(ip_addr);
+                server.sin_family = AF_INET;
+                server.sin_port = htons(DST_PORT);
+                int res = 90;
+                if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
+                    res = 91;
                 }
 
-                close(sock);
-            }
-            close(client_sock);
+                printf("Make request:\n");
+                unsigned char package[8];
+                package[0] = 0;
+                package[1] = (unsigned char) res ; // 90 or 91
+                package[2] = DST_PORT / 256;
+                package[3] = DST_PORT % 256;
+                package[4] = DST_IP >> 24;
+                package[5] = (DST_IP >> 16) & 0xFF;
+                package[6] = (DST_IP >> 8)  & 0xFF;
+                package[7] = DST_IP & 0xFF;
 
-            exit(0);
+                for(int c=0; c<8; c++) {
+                    printf("package[%d] = %u\n", c, package[c]);
+                }
+                write(client_sock, package, 8);
+
+                if(res == 90){
+                    fd_set rfds, afds;
+                    int nfds = sock>client_sock?sock+1:client_sock+1;
+                    FD_ZERO(&afds);
+                    FD_SET(sock, &afds);
+                    FD_SET(client_sock, &afds);
+                    while(1 == 1) {
+
+                        memcpy(&rfds, &afds, sizeof(rfds));
+
+                        if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
+                            perror("select error");
+                            fflush(stdout);
+                            //close(sock);
+                            close(client_sock);
+                            break;
+                        }
+                        bzero(buffer, 8192);
+                        if(FD_ISSET(sock, &rfds)) {
+                            len = read(sock, buffer, 8192);
+                            if(len > 0){
+                                printf("Data read from sock: %d\n", len);
+                                fflush(stdout);
+                                write(client_sock, buffer, len);
+                            }
+                            
+                        } else if(FD_ISSET(client_sock, &rfds)) {
+                            len = read(client_sock, buffer, 8192);
+                            if(len > 0){
+                                printf("Data read from client sock: %d\n", len);
+                                fflush(stdout);
+                                write(sock, buffer, len);
+                            }
+                            
+                        }
+
+                    }
+
+                    close(sock);
+                }
+                close(client_sock);
+
+                exit(0);
+            } else if(CD == 2) {
+                // Bind mode! Let's rock!!!
+
+                DST_PORT = 52000 + rand() % 1000;
+                printf("Bind port : %d\n", DST_PORT);
+                fflush(stdout);
+                sprintf(port_str, "%d", DST_PORT);
+                int bind_sc_fd = passivesock(port_str, "tcp", 5);
+
+                struct sockaddr_in server;
+                int sock = socket(AF_INET , SOCK_STREAM , 0);
+                char ip_addr[17]; //xxx.xxx.xxx.xxx
+                sprintf(ip_addr, "%u.%u.%u.%u", buffer[4], buffer[5],  buffer[6], buffer[7]);
+                server.sin_addr.s_addr = inet_addr(ip_addr);
+                server.sin_family = AF_INET;
+                server.sin_port = htons(DST_PORT);
+                int res = 90;
+                if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
+                    res = 91;
+                }
+
+                printf("Make request:\n");
+                unsigned char package[8];
+                package[0] = 0;
+                package[1] = (unsigned char) res ; // 90 or 91
+                package[2] = DST_PORT / 256;
+                package[3] = DST_PORT % 256;
+                package[4] = 0
+                package[5] = 0
+                package[6] = 0
+                package[7] = 0
+
+                for(int c=0; c<8; c++) {
+                    printf("package[%d] = %u\n", c, package[c]);
+                }
+                write(client_sock, package, 8);
+
+                printf("Wait for bind client.....\n");
+                int client_sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
+                printf("OK, Bind!\n");
+                
+
+            }
         } else {
             close(client_sock);
         }
