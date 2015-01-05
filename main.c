@@ -40,9 +40,10 @@ int main(int argc, const char *argv[])
         int pid = fork();
 
         if(pid == 0){
-            unsigned char buffer[1024];
-            bzero(buffer, 1024);
-            read(client_sock, buffer, 1024);
+            unsigned char buffer[8192];
+            bzero(buffer, 8192);
+            int len = read(client_sock, buffer, 8192);
+            printf("Header lenght: %d\n", len);
             unsigned char VN = buffer[0] ;
             unsigned char CD = buffer[1] ;
             unsigned int DST_PORT = buffer[2] << 8 | buffer[3] ;
@@ -63,6 +64,7 @@ int main(int argc, const char *argv[])
             }
 
 
+            
             // connect to http server
             struct sockaddr_in server;
             int sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -78,7 +80,7 @@ int main(int argc, const char *argv[])
 
             printf("Make request:\n");
             unsigned char package[8];
-            package[0] = 1;
+            package[0] = 0;
             package[1] = (unsigned char) res ; // 90 or 91
             package[2] = DST_PORT / 256;
             package[3] = DST_PORT % 256;
@@ -99,31 +101,36 @@ int main(int argc, const char *argv[])
                 FD_SET(sock, &afds);
                 FD_SET(client_sock, &afds);
                 while(1 == 1) {
-                    int len; // for read and write
 
                     memcpy(&rfds, &afds, sizeof(rfds));
 
                     if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
                         perror("select error");
                         fflush(stdout);
-                        close(sock);
+                        //close(sock);
                         close(client_sock);
-                        return 0;
+                        break;
+                    }
+                    bzero(buffer, 8192);
+                    if(FD_ISSET(sock, &rfds)) {
+                        len = read(sock, buffer, 8192);
+                        if(len > 0){
+                            printf("Data read from sock: %d\n", len);
+                            fflush(stdout);
+                            write(client_sock, buffer, len);
+                        }
+                        
+                    } else if(FD_ISSET(client_sock, &rfds)) {
+                        len = read(client_sock, buffer, 8192);
+                        if(len > 0){
+                            printf("Data read from client sock: %d\n", len);
+                            fflush(stdout);
+                            write(sock, buffer, len);
+                        }
+                        
                     }
 
-                    if(FD_ISSET(sock, &rfds)) {
-                        len = read(sock, buffer, 1024);
-                        if(len != 0){
-                            printf("Data read from sock: %d\n", len);
-                        }
-                        write(client_sock, buffer, len);
-                    } else if(FD_ISSET(client_sock, &rfds)) {
-                        len = read(client_sock, buffer, 1024);
-                        if(len != 0){
-                            printf("Data read from client sock: %d\n", len);
-                        }
-                        write(sock, buffer, len);
-                    }
+                    //FD_ZERO(&rfds);
 
                 }
 
@@ -131,7 +138,9 @@ int main(int argc, const char *argv[])
             }
             close(client_sock);
 
-            return 0;
+            exit(0);
+        } else {
+            close(client_sock);
         }
     }
     close(sc_fd);
