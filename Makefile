@@ -1,2 +1,2 @@
 all:
-	gcc -g main.c passivesock.c -o server
+	gcc -g main.c socks.c -o server
