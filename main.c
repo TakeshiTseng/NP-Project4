@@ -191,7 +191,7 @@ int main(int argc, const char *argv[])
                 // for bind server
                 struct sockaddr_in server;
                 printf("[Bind] Createing server sock\n");
-                port = 9000 + rand() % 100;
+                port = 0;
                 int bind_sc_fd = create_server_sock(port, &server);
 
                 printf("[Bind] Bind server port: %d\n", port);
@@ -222,7 +222,7 @@ int main(int argc, const char *argv[])
                     sock_reply(client_sock, pkt, 1);
 
                     printf("[Bind] accepting.....\n");
-                    sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
+                    int sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
                     printf("[Bind] OK, Accept!\n");
                     sock_reply(client_sock, pkt, 1);
 
@@ -263,59 +263,9 @@ int main(int argc, const char *argv[])
                     }
 
                     close(sock);
-                    /*
-                    printf("[Bind] Connecting to dest server\n");
-                    printf("[Bind] dst ip: %d, port: %d\n", ori_dst_ip, ori_dst_port);
-                    // to connect server
-                    int sock = socket(AF_INET , SOCK_STREAM , 0);
-                    server.sin_addr.s_addr = ori_dst_ip;
-                    server.sin_family = AF_INET;
-                    server.sin_port = htons(ori_dst_port);
-                    if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
-                        perror("[bind] Connect error");
-                        sock_reply(client_sock, pkt, 0);
-                        return -1;
-                    }
-
-
-                    fd_set rfds, afds;
-                    int nfds = sock>bind_client_sock?sock+1:bind_client_sock+1;
-                    FD_ZERO(&afds);
-                    FD_SET(sock, &afds);
-                    FD_SET(bind_client_sock, &afds);
-                    while(1 == 1) {
-
-                        memcpy(&rfds, &afds, sizeof(rfds));
-
-                        if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
-                            perror("select error");
-                            fflush(stdout);
-                            //close(sock);
-                            close(bind_client_sock);
-                            break;
-                        }
-                        bzero(buffer, 8192);
-                        if(FD_ISSET(sock, &rfds)) {
-                            int len = read(sock, buffer, 8192);
-                            if(len > 0){
-                                printf("[Bind] Data read from sock: %d\n", len);
-                                fflush(stdout);
-                                write(bind_client_sock, buffer, len);
-                            }
-                        } else if(FD_ISSET(bind_client_sock, &rfds)) {
-                            int len = read(bind_client_sock, buffer, 8192);
-                            if(len > 0){
-                                printf("[Bind] Data read from client sock: %d\n", len);
-                                fflush(stdout);
-                                write(sock, buffer, len);
-                            }
-                        }
-
-                    }
-
-                    */
                 }
                 close(bind_sc_fd);
+                exit(0);
             }
         } else {
             close(client_sock);
