@@ -209,22 +209,14 @@ int main(int argc, const char *argv[])
                     sock_reply(client_sock, pkt, 0);
                     return -1;
                 }
-
-                printf("[Bind] Connecting to dest server\n");
-                printf("[Bind] dst ip: %d, port: %d\n", pkt.dst_ip, pkt.dst_port);
-                // to connect server
-                int sock = socket(AF_INET , SOCK_STREAM , 0);
-                server.sin_addr.s_addr = pkt.dst_ip;
-                server.sin_family = AF_INET;
-                server.sin_port = htons(pkt.dst_port);
-
                 if(bind_sc_fd < 0) {
                     perror("[Bind] Create error\n");
                     sock_reply(client_sock, pkt, 0);
-                } else if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
-                    perror("[bind] Connect error");
-                    sock_reply(client_sock, pkt, 0);
                 } else {
+
+                    int ori_dst_ip = pkt.dst_ip;
+                    int ori_dst_port = pkt.dst_port;
+
                     pkt.dst_ip = 0;
                     pkt.dst_port = server.sin_port;
                     sock_reply(client_sock, pkt, 1);
@@ -233,6 +225,20 @@ int main(int argc, const char *argv[])
                     int bind_client_sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
                     printf("[Bind] OK, Accept!\n");
                     sock_reply(client_sock, pkt, 1);
+
+                    printf("[Bind] Connecting to dest server\n");
+                    printf("[Bind] dst ip: %d, port: %d\n", ori_dst_ip, ori_dst_port);
+                    // to connect server
+                    int sock = socket(AF_INET , SOCK_STREAM , 0);
+                    server.sin_addr.s_addr = ori_dst_ip;
+                    server.sin_family = AF_INET;
+                    server.sin_port = htons(ori_dst_port);
+                    if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
+                        perror("[bind] Connect error");
+                        sock_reply(client_sock, pkt, 0);
+                        return -1;
+                    }
+
 
                     fd_set rfds, afds;
                     int nfds = sock>bind_client_sock?sock+1:bind_client_sock+1;
