@@ -222,10 +222,48 @@ int main(int argc, const char *argv[])
                     sock_reply(client_sock, pkt, 1);
 
                     printf("[Bind] accepting.....\n");
-                    int bind_client_sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
+                    sock = accept(bind_sc_fd, (struct sockaddr *)&client_addr, (socklen_t*)&addrlen);
                     printf("[Bind] OK, Accept!\n");
                     sock_reply(client_sock, pkt, 1);
 
+
+                    fd_set rfds, afds;
+                    int nfds = sock>client_sock?sock+1:client_sock+1;
+                    FD_ZERO(&afds);
+                    FD_SET(sock, &afds);
+                    FD_SET(client_sock, &afds);
+                    while(1 == 1) {
+
+                        memcpy(&rfds, &afds, sizeof(rfds));
+
+                        if(select(nfds, &rfds, NULL, NULL, NULL) < 0) {
+                            perror("[Conn]select error");
+                            fflush(stdout);
+                            //close(sock);
+                            close(client_sock);
+                            break;
+                        }
+                        bzero(buffer, 8192);
+                        if(FD_ISSET(sock, &rfds)) {
+                            int len = read(sock, buffer, 8192);
+                            if(len > 0){
+                                printf("[Conn]Data read from sock: %d\n", len);
+                                fflush(stdout);
+                                write(client_sock, buffer, len);
+                            }
+                        } else if(FD_ISSET(client_sock, &rfds)) {
+                            int len = read(client_sock, buffer, 8192);
+                            if(len > 0){
+                                printf("[Conn]Data read from client sock: %d\n", len);
+                                fflush(stdout);
+                                write(sock, buffer, len);
+                            }
+                        }
+
+                    }
+
+                    close(sock);
+                    /*
                     printf("[Bind] Connecting to dest server\n");
                     printf("[Bind] dst ip: %d, port: %d\n", ori_dst_ip, ori_dst_port);
                     // to connect server
@@ -274,6 +312,8 @@ int main(int argc, const char *argv[])
                         }
 
                     }
+
+                    */
                 }
                 close(bind_sc_fd);
             }
