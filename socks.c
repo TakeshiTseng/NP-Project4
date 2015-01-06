@@ -52,7 +52,7 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
         return -1;
     }
 
-    bzero((char *) &sock_server, sizeof(sock_server));
+    bzero((char *) sock_server, sizeof(struct sockaddr_in));
     (*sock_server).sin_family = AF_INET;
     (*sock_server).sin_addr.s_addr = INADDR_ANY;
     (*sock_server).sin_port = htons(port);
