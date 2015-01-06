@@ -91,7 +91,7 @@ int main(int argc, const char *argv[])
                     bind_sc_fd = create_server_sock(port, &bind_server);
                 }
 
-                printf("[Bind] Bind server port: %d\n", bind_server.sin_port);
+                printf("[Bind] Bind server port: %d\n", port);
 
                 if(bind_sc_fd < 0) {
                     perror("[Bind] Create error\n");
