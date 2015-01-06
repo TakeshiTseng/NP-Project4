@@ -48,8 +48,6 @@ int main(int argc, const char *argv[])
         int pid = fork();
 
         if(pid == 0){
-            unsigned char buffer[8192];
-            bzero(buffer, 8192);
             sock4pkt_t pkt;
             sock_req(client_sock, &pkt);
 
@@ -83,7 +81,7 @@ int main(int argc, const char *argv[])
                 printf("[Bind] Createing server sock\n");
                 port = 0;
                 int bind_sc_fd = create_server_sock(port, &server);
-                
+
                 if(bind_sc_fd < 0) {
                     return -1;
                 }

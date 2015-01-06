@@ -45,7 +45,7 @@ void sock_reply(int sock_fd, sock4pkt_t pkt, int vaild) {
 
 int create_server_sock(int port, struct sockaddr_in* sock_server) {
 
-    int sc_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int sc_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(sc_fd < 0) {
         perror("Create sock server error");
@@ -57,7 +57,7 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
     (*sock_server).sin_addr.s_addr = INADDR_ANY;
     (*sock_server).sin_port = htons(port);
 
-    if(bind(sc_fd, (const struct sockaddr*)&sock_server, sizeof(struct sockaddr)) < 0) {
+    if(bind(sc_fd, (struct sockaddr *) &sock_server,sizeof(sock_server)) < 0) {
         perror("Bind error");
         return -1;
     }
