@@ -57,7 +57,7 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
     (*sock_server).sin_addr.s_addr = INADDR_ANY;
     (*sock_server).sin_port = htons(port);
 
-    if(bind(sc_fd, (struct sockaddr *) &sock_server,sizeof(sock_server)) < 0) {
+    if(bind(sc_fd, (struct sockaddr *) sock_server, sizeof(struct sockaddr_in)) < 0) {
         perror("Bind error");
         return -1;
     }
