@@ -31,6 +31,10 @@ int main(int argc, const char *argv[])
     struct sockaddr_in sock_server;
     int sc_fd = create_server_sock(port, &sock_server);
 
+    if(sc_fd < 0) {
+        return -1;
+    }
+
     struct sockaddr_in client_addr;
     int addrlen = sizeof(client_addr);
     printf("Accepting.....\n");
@@ -79,7 +83,10 @@ int main(int argc, const char *argv[])
                 printf("[Bind] Createing server sock\n");
                 port = 0;
                 int bind_sc_fd = create_server_sock(port, &server);
-
+                
+                if(bind_sc_fd < 0) {
+                    return -1;
+                }
                 printf("[Bind] Bind server port: %d\n", server.sin_port);
 
                 if(bind_sc_fd < 0) {
@@ -90,7 +97,7 @@ int main(int argc, const char *argv[])
 
                 pkt.dst_ip = 0;
                 pkt.dst_port = server.sin_port;
-                
+
                 sock_reply(client_sock, pkt, 1);
 
                 printf("[Bind] accepting.....\n");

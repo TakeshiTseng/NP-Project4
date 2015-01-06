@@ -1,5 +1,7 @@
 #include "socks.h"
 
+
+
 void sock_req(int sock_fd, sock4pkt_t* pkt) {
     byte_t buffer[1024];
     bzero(buffer, 1024);
@@ -19,7 +21,6 @@ void sock_req(int sock_fd, sock4pkt_t* pkt) {
             pkt->domain_name = malloc(do_len+1);
             bzero(pkt->domain_name, do_len+1);
             strcpy(pkt->domain_name, &(buffer[8 + len + 1]));
-            printf("DOMAIN_NAME: %s\n", pkt->domain_name);
         }
 
     }
@@ -43,16 +44,18 @@ void sock_reply(int sock_fd, sock4pkt_t pkt, int vaild) {
 }
 
 int create_server_sock(int port, struct sockaddr_in* sock_server) {
-    sock_server->sin_family = AF_INET;
-    sock_server->sin_addr.s_addr = INADDR_ANY;
-    sock_server->sin_port = htons(port);
-    memset((void*)&(sock_server->sin_zero), 0, 8);
+
     int sc_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if(sc_fd < 0) {
         perror("Create sock server error");
         return -1;
     }
+
+    bzero((char *) &sock_server, sizeof(sock_server));
+    (*sock_server).sin_family = AF_INET;
+    (*sock_server).sin_addr.s_addr = INADDR_ANY;
+    (*sock_server).sin_port = htons(port);
 
     if(bind(sc_fd, (const struct sockaddr*)&sock_server, sizeof(struct sockaddr)) < 0) {
         perror("Bind error");
@@ -95,7 +98,7 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             if(len > 0){
                 printf("Data read from sock_fd1: %d\n", len);
                 fflush(stdout);
-                write(sock, buffer, len);
+                write(sock_fd2, buffer, len);
             }
         }
 
