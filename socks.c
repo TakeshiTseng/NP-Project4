@@ -98,6 +98,8 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             if(len > 0){
                 printf("Data read from sock_fd1: %d\n", len);
                 fflush(stdout);
+                write(1, buffer, len>100?100:len);
+                write(1, "\n", 1);
                 write(sock_fd2, buffer, len);
             }
         }
@@ -107,6 +109,8 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             if(len > 0){
                 printf("Data read from sock_fd2: %d\n", len);
                 fflush(stdout);
+                write(1, buffer, len>100?100:len);
+                write(1, "\n", 1);
                 write(sock_fd1, buffer, len);
             }
         } 
