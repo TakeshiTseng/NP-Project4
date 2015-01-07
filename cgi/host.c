@@ -8,4 +8,5 @@ void create_host(host_t** host, char* hostname, int port, char* filename) {
     (*host)->port = port;
     strcpy((*host)->filename, filename);
     (*host)->is_connect = 0;
+    (*host)->sock_connected = 0;
 }

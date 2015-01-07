@@ -57,9 +57,17 @@ int main(int argc, const char *argv[])
                 create_host(&hosts[num_of_host], hostname, 0, "");
             } else if(attrs[c][0] == 'p') {
                 hosts[num_of_host]->port = atoi(&attrs[c][3]);
-            } else {
+            } else if(attrs[c][0] == 'f') {
                 strcpy(hosts[num_of_host]->filename, &attrs[c][3]);
                 hosts[num_of_host]->host_file = fopen(hosts[num_of_host]->filename, "r");
+            } else if(attrs[c][0] == 's' && attrs[c][1] == 'h') {
+                // sock host
+                num_of_host = attrs[c][2] - '0';
+                strcpy(hosts[num_of_host]->sock_server, &attrs[c][4])
+            } else if(attrs[c][0] == 's' && attrs[c][1] == 'p') {
+                // sock port
+                num_of_host = attrs[c][2] - '0';
+                hosts[num_of_host]->sock_port = atoi(&attrs[c][4]);
             }
         }
     }
@@ -87,7 +95,7 @@ int main(int argc, const char *argv[])
 
     fd_set rfds, afds;
     int nfds;
-    nfds = getdtablesize
+    nfds = getdtablesize();
     FD_ZERO(&afds);
     int exit_flags[6];
 
@@ -106,9 +114,9 @@ int main(int argc, const char *argv[])
                 return 500;
             }
             memset(&server, 0, sizeof(server));
-            server.sin_addr.s_addr = inet_addr(hosts[c]->hostname);
+            server.sin_addr.s_addr = inet_addr(hosts[c]->sock_server);
             server.sin_family = AF_INET;
-            server.sin_port = htons(hosts[c]->port);
+            server.sin_port = htons(hosts[c]->sock_port);
             int flag = fcntl(sock, F_GETFL, 0);
             fcntl(sock, F_SETFL, flag | O_NONBLOCK);
 
@@ -118,6 +126,14 @@ int main(int argc, const char *argv[])
                     printf("Connect error\n");
                     fflush(stdout);
                     return 500;
+                } else {
+                    // send sock v4 pack
+                    sock4pkt_t pkt;
+                    pkt.vn = 4;
+                    pkt.cd = 1;
+                    pkt.dst_ip = inet_addr(hosts[c]->hostname);
+                    pkt.dst_port = hosts[c]->port;
+                    sock_reply(sock, pkt);
                 }
             }
 
@@ -149,6 +165,19 @@ int main(int argc, const char *argv[])
                 }
             }
             if(hosts[c] != NULL && FD_ISSET(hosts[c]->server_fd, &rfds)) {
+
+                if(hosts[c]->sock_connected == 0) {
+                    sock4pkt_t pkt;
+                    sock_req(hosts[c]->server_fd, &pkt);
+                    if(pkt.cd == 90) {
+                        // socket accept
+                        hosts[c]->sock_connected = 1;
+                    } else {
+                        exit_flags[c] = 1;
+                    }
+                    continue;
+                }
+
                 char buffer[10001];
                 bzero(buffer, 10001);
                 if(read_line(hosts[c]->server_fd, buffer) > 0) {

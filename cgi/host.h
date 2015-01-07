@@ -13,6 +13,8 @@ struct host {
     int server_fd;
     FILE* host_file;
     int is_connect;
+    char sock_server[21];
+    int sock_port;
     struct sockaddr_in server;
 };
 
