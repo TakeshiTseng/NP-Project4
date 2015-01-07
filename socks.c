@@ -98,6 +98,10 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             if(len > 0){
                 write(sock_fd2, buffer, len);
             }
+            if(len == 0) {
+                close(sock_fd1);
+                FD_CLR(sock_fd1, &afds);
+            }
         }
 
         if(FD_ISSET(sock_fd2, &rfds)) {
@@ -105,7 +109,12 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             if(len > 0){
                 write(sock_fd1, buffer, len);
             }
-        } 
+            if(len == 0) {
+                close(sock_fd2);
+                FD_CLR(sock_fd2, &afds);
+            }
+
+        }
 
 
     }
