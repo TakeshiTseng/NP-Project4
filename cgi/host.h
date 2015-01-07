@@ -16,6 +16,7 @@ struct host {
     char sock_server[21];
     int sock_port;
     struct sockaddr_in server;
+    int sock_connected;
 };
 
 typedef struct host host_t;

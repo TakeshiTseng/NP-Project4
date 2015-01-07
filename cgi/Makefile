@@ -1,2 +1,3 @@
 all:
-	gcc -g hw3.c host.c util.c -o hw3.cgi
+	gcc -g hw4.c host.c util.c socks.c -o hw4.cgi
+	mv hw4.cgi ../../public_html/

@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <errno.h>
+#include "socks.h"
+
 
 int read_line(int fd, char* buffer) {
     int count = 0;
@@ -33,7 +35,6 @@ int main(int argc, const char *argv[])
 {
     printf("Content-Type: text/html\n\n");
     fflush(stdout);
-    setenv("QUERY_STRING", "h1=127.0.0.1&p1=2065&f1=t1.txt", 1);
     char* query = getenv("QUERY_STRING");
 
     int c;
@@ -41,6 +42,11 @@ int main(int argc, const char *argv[])
     char** attrs;
     str_split(query, "&", &attrs, &attr_count);
 
+    printf("attrs %d<br>\n", attr_count);
+    for(c=0; c<5; c++) {
+        printf("attrs[%d] : %s<br>\n", c, attrs[c]);
+    }
+    fflush(stdout);
     host_t* hosts[6];
     for(c=0; c<6; c++) {
         hosts[c] = NULL;
@@ -48,28 +54,34 @@ int main(int argc, const char *argv[])
 
 
     for(c=0; c<attr_count; c++) {
-        if(strlen(attrs[c]) > 3) {
+        if(strlen(attrs[c]) > 4 || (strlen(attrs[c]) > 3 && attrs[c][0] != 's')) {
             int num_of_host = attrs[c][1] - '0';
             if(attrs[c][0] == 'h') {
                 char hostname[17];
                 bzero(hostname, 17);
                 strcpy(hostname, &attrs[c][3]);
                 create_host(&hosts[num_of_host], hostname, 0, "");
+                printf("Create host %d : %s<br>\n", num_of_host, hostname);
             } else if(attrs[c][0] == 'p') {
                 hosts[num_of_host]->port = atoi(&attrs[c][3]);
+                printf("Host %d port : %d<br>\n", num_of_host, atoi(&attrs[c][3]));
             } else if(attrs[c][0] == 'f') {
                 strcpy(hosts[num_of_host]->filename, &attrs[c][3]);
                 hosts[num_of_host]->host_file = fopen(hosts[num_of_host]->filename, "r");
+                printf("Host % d file : %s<br>\n", num_of_host, &attrs[c][3]);
             } else if(attrs[c][0] == 's' && attrs[c][1] == 'h') {
                 // sock host
                 num_of_host = attrs[c][2] - '0';
-                strcpy(hosts[num_of_host]->sock_server, &attrs[c][4])
+                strcpy(hosts[num_of_host]->sock_server, &attrs[c][4]);
+                printf("Host %d sock server : %s<br>\n", num_of_host, &attrs[c][4]);
             } else if(attrs[c][0] == 's' && attrs[c][1] == 'p') {
                 // sock port
                 num_of_host = attrs[c][2] - '0';
                 hosts[num_of_host]->sock_port = atoi(&attrs[c][4]);
+                printf("Host %d port : %d\n", num_of_host, atoi(&attrs[c][4]));
             }
         }
+        fflush(stdout);
     }
 
    // print table header
@@ -122,8 +134,7 @@ int main(int argc, const char *argv[])
 
             if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
                 if(errno != EINPROGRESS) {
-                    printf("Errno : %d\n", errno);
-                    printf("Connect error\n");
+                    perror("Connect error ");
                     fflush(stdout);
                     return 500;
                 } else {
@@ -133,7 +144,7 @@ int main(int argc, const char *argv[])
                     pkt.cd = 1;
                     pkt.dst_ip = inet_addr(hosts[c]->hostname);
                     pkt.dst_port = hosts[c]->port;
-                    sock_reply(sock, pkt);
+                    send_sock(sock, pkt);
                 }
             }
 
@@ -168,7 +179,7 @@ int main(int argc, const char *argv[])
 
                 if(hosts[c]->sock_connected == 0) {
                     sock4pkt_t pkt;
-                    sock_req(hosts[c]->server_fd, &pkt);
+                    get_sock(hosts[c]->server_fd, &pkt);
                     if(pkt.cd == 90) {
                         // socket accept
                         hosts[c]->sock_connected = 1;
