@@ -77,15 +77,21 @@ int main(int argc, const char *argv[])
                 // Bind mode! Let's rock!!!
                 printf("[Bind] Bind mode\n");
                 // for bind server
-                struct sockaddr_in server;
+                struct sockaddr_in bind_server;
                 printf("[Bind] Createing server sock\n");
-                port = 0;
-                int bind_sc_fd = create_server_sock(port, &server);
 
-                if(bind_sc_fd < 0) {
-                    return -1;
+
+                port = 9000 + rand() % 100;
+                int bind_sc_fd = create_server_sock(port, &bind_server);
+
+                while(bind_sc_fd < 0) {
+                    printf("Rebind port\n");
+                    sleep(1);
+                    port = 9000 + rand() % 100;
+                    bind_sc_fd = create_server_sock(port, &bind_server);
                 }
-                printf("[Bind] Bind server port: %d\n", server.sin_port);
+
+                printf("[Bind] Bind server port: %d\n", port);
 
                 if(bind_sc_fd < 0) {
                     perror("[Bind] Create error\n");
@@ -94,7 +100,7 @@ int main(int argc, const char *argv[])
                 }
 
                 pkt.dst_ip = 0;
-                pkt.dst_port = server.sin_port;
+                pkt.dst_port = port;
 
                 sock_reply(client_sock, pkt, 1);
 
@@ -104,7 +110,6 @@ int main(int argc, const char *argv[])
                 sock_reply(client_sock, pkt, 1);
 
                 exchange_socket_data(sock, client_sock);
-                
                 close(bind_sc_fd);
                 return 0;
             }

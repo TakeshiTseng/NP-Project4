@@ -73,7 +73,7 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
 void exchange_socket_data(int sock_fd1, int sock_fd2) {
 
 
-    char buffer[8192];
+    char buffer[1048576];
     fd_set rfds, afds;
     int nfds = sock_fd2>sock_fd1?sock_fd2+1:sock_fd1+1;
 
@@ -91,22 +91,18 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
             close(sock_fd2);
             break;
         }
-        bzero(buffer, 8192);
+        bzero(buffer, 1048576);
 
         if(FD_ISSET(sock_fd1, &rfds)) {
-            int len = read(sock_fd1, buffer, 8192);
+            int len = read(sock_fd1, buffer, 1048576);
             if(len > 0){
-                printf("Data read from sock_fd1: %d\n", len);
-                fflush(stdout);
                 write(sock_fd2, buffer, len);
             }
         }
 
         if(FD_ISSET(sock_fd2, &rfds)) {
-            int len = read(sock_fd2, buffer, 8192);
+            int len = read(sock_fd2, buffer, 1048576);
             if(len > 0){
-                printf("Data read from sock_fd2: %d\n", len);
-                fflush(stdout);
                 write(sock_fd1, buffer, len);
             }
         } 
