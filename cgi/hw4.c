@@ -145,6 +145,8 @@ int main(int argc, const char *argv[])
                     pkt.dst_ip = inet_addr(hosts[c]->hostname);
                     pkt.dst_port = hosts[c]->port;
                     send_sock(sock, pkt);
+                    printf("Sock pkt sent<br>\n");
+                    fflush(stdout);
                 }
             }
 
@@ -180,6 +182,9 @@ int main(int argc, const char *argv[])
                 if(hosts[c]->sock_connected == 0) {
                     sock4pkt_t pkt;
                     get_sock(hosts[c]->server_fd, &pkt);
+                    printf("Sock pkt get<br>\n");
+                    printf("pkt.cd : %d\n", pkt.cd);
+                    fflush(stdout);
                     if(pkt.cd == 90) {
                         // socket accept
                         hosts[c]->sock_connected = 1;

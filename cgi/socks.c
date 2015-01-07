@@ -42,7 +42,7 @@ void send_sock(int sock_fd, sock4pkt_t pkt) {
     package[5] = (pkt.dst_ip >> 16) & 0xFF;
     package[6] = (pkt.dst_ip >> 8)  & 0xFF;
     package[7] = pkt.dst_ip & 0xFF;
-    package[8] = 0;
+    package[8] = NULL;
 
     write(sock_fd, package, 9);
 
