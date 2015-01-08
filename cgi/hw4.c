@@ -44,11 +44,6 @@ int main(int argc, const char *argv[])
     char** attrs;
     str_split(query, "&", &attrs, &attr_count);
 
-    printf("attrs %d<br>\n", attr_count);
-    for(c=0; c<5; c++) {
-        printf("attrs[%d] : %s<br>\n", c, attrs[c]);
-    }
-    fflush(stdout);
     host_t* hosts[6];
     for(c=0; c<6; c++) {
         hosts[c] = NULL;
@@ -63,27 +58,21 @@ int main(int argc, const char *argv[])
                 bzero(hostname, 17);
                 strcpy(hostname, &attrs[c][3]);
                 create_host(&hosts[num_of_host], hostname, 0, "");
-                printf("Create host %d : %s<br>\n", num_of_host, hostname);
             } else if(attrs[c][0] == 'p') {
                 hosts[num_of_host]->port = atoi(&attrs[c][3]);
-                printf("Host %d port : %d<br>\n", num_of_host, atoi(&attrs[c][3]));
             } else if(attrs[c][0] == 'f') {
                 strcpy(hosts[num_of_host]->filename, &attrs[c][3]);
                 hosts[num_of_host]->host_file = fopen(hosts[num_of_host]->filename, "r");
-                printf("Host % d file : %s<br>\n", num_of_host, &attrs[c][3]);
             } else if(attrs[c][0] == 's' && attrs[c][1] == 'h') {
                 // sock host
                 num_of_host = attrs[c][2] - '0';
                 strcpy(hosts[num_of_host]->sock_server, &attrs[c][4]);
-                printf("Host %d sock server : %s<br>\n", num_of_host, &attrs[c][4]);
             } else if(attrs[c][0] == 's' && attrs[c][1] == 'p') {
                 // sock port
                 num_of_host = attrs[c][2] - '0';
                 hosts[num_of_host]->sock_port = atoi(&attrs[c][4]);
-                printf("Host %d port : %d\n", num_of_host, atoi(&attrs[c][4]));
             }
         }
-        fflush(stdout);
     }
 
    // print table header
@@ -147,14 +136,9 @@ int main(int argc, const char *argv[])
             pkt.dst_ip = dst_ip;
             pkt.dst_port = hosts[c]->port;
             send_sock(sock, pkt);
-            printf("Sock pkt sent<br>\n");
-            fflush(stdout);
 
             sock4pkt_t pkt_rec;
             get_sock(sock, &pkt_rec);
-            printf("Sock pkt get<br>\n");
-            printf("pkt.cd : %d\n", pkt_rec.cd);
-            fflush(stdout);
 
             if(pkt_rec.cd == 91) {
                 exit_flags[c] == 1;

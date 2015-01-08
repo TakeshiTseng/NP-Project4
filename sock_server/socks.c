@@ -74,7 +74,7 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
         return -1;
     }
 
-    if(listen(sc_fd, 10) < 0) {
+    if(listen(sc_fd, 20) < 0) {
         perror("Listen error");
         return -1;
     }
@@ -139,10 +139,8 @@ int firewall_check(unsigned int dst_ip) {
     fscanf(file, "%s", buf);
     fclose(file);
 
-    printf("Filewall %s\n", buf);
 
     if(strcmp(buf, "NCTU") == 0) {
-        printf("%d, %d\n", dst_ip >> 24, dst_ip >> 16 & 0xff);
         if((dst_ip >> 24) == 140 && (dst_ip >> 16 & 0xff) == 113) {
             return 1;
         } else {
