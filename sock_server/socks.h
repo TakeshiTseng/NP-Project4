@@ -17,8 +17,8 @@ struct sock4pkt {
     int cd;
     int dst_port;
     unsigned int dst_ip;
-    char* user_id;
-    char* domain_name;
+    char user_id[512];
+    char domain_name[512];
 };
 typedef struct sock4pkt sock4pkt_t;
 

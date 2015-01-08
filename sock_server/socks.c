@@ -9,19 +9,20 @@ void sock_req(int sock_fd, sock4pkt_t* pkt) {
     pkt->dst_port = buffer[2] << 8 | buffer[3] ;
     pkt->dst_ip = buffer[4] << 24 | buffer[5] << 16 | buffer[6] << 8 | buffer[7] ;
 
-    if(buffer[8] != '\0') {
-        int len = strlen(&(buffer[8]));
-        pkt->user_id = malloc(len + 1);
-        bzero(pkt->user_id, len+1);
-        strcpy(pkt->user_id, &(buffer[8]));
-        if(buffer[4] == 0 && buffer[5] == 0 && buffer[6] == 0) {
-            int do_len = strlen(&(buffer[8 + len + 1]));
-            pkt->domain_name = malloc(do_len+1);
-            bzero(pkt->domain_name, do_len+1);
-            strcpy(pkt->domain_name, &(buffer[8 + len + 1]));
-        }
+    bzero(pkt->user_id, 512);
+    strcpy(pkt->user_id, &(buffer[8]));
 
+    if(buffer[4] == 0 && buffer[5] == 0 && buffer[6] == 0) {
+        int pos_of_dn = len-2;
+        while(buffer[pos_of_dn] != '\0') {
+            pos_of_dn--;
+        }
+        pos_of_dn++;
+
+        bzero(pkt->domain_name, 512);
+        strcpy(pkt->domain_name, &(buffer[pos_of_dn]));
     }
+
     printf("Pkt length: %d\n", len);
     printf("VN: %d, ", pkt->vn);
     printf("CD: %d, ", pkt->cd);
