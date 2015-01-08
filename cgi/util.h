@@ -11,4 +11,6 @@ int count_char_num(char* str, char c);
 void replace_to_html(char* str);
 int str_ends_with(char* str, char c);
 int str_starts_with(char* str, char c);
+
+int get_ip_num(char* ip, int pos);
 #endif

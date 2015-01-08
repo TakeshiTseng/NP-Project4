@@ -13,7 +13,9 @@
 int read_line(int fd, char* buffer) {
     int count = 0;
     char buf[1];
+    int flag = 0;
     while(read(fd, buf, 1) > 0) {
+
         if(buf[0] == '\r')continue;
         buffer[count++] = buf[0];
         if(buf[0] == '\n')break;
@@ -129,26 +131,38 @@ int main(int argc, const char *argv[])
             server.sin_addr.s_addr = inet_addr(hosts[c]->sock_server);
             server.sin_family = AF_INET;
             server.sin_port = htons(hosts[c]->sock_port);
-            int flag = fcntl(sock, F_GETFL, 0);
-            fcntl(sock, F_SETFL, flag | O_NONBLOCK);
 
             if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
                 if(errno != EINPROGRESS) {
                     perror("Connect error ");
                     fflush(stdout);
                     return 500;
-                } else {
-                    // send sock v4 pack
-                    sock4pkt_t pkt;
-                    pkt.vn = 4;
-                    pkt.cd = 1;
-                    pkt.dst_ip = inet_addr(hosts[c]->hostname);
-                    pkt.dst_port = hosts[c]->port;
-                    send_sock(sock, pkt);
-                    printf("Sock pkt sent<br>\n");
-                    fflush(stdout);
                 }
             }
+
+            sock4pkt_t pkt;
+            pkt.vn = 4;
+            pkt.cd = 1;
+            int dst_ip = get_ip_num(hosts[c]->hostname, 0) << 24 | get_ip_num(hosts[c]->hostname, 1) << 16 | get_ip_num(hosts[c]->hostname, 2) << 8 | get_ip_num(hosts[c]->hostname, 3);
+            pkt.dst_ip = dst_ip;
+            pkt.dst_port = hosts[c]->port;
+            send_sock(sock, pkt);
+            printf("Sock pkt sent<br>\n");
+            fflush(stdout);
+
+            sock4pkt_t pkt_rec;
+            get_sock(sock, &pkt_rec);
+            printf("Sock pkt get<br>\n");
+            printf("pkt.cd : %d\n", pkt_rec.cd);
+            fflush(stdout);
+
+            if(pkt_rec.cd == 91) {
+                exit_flags[c] == 1;
+            } else {
+                hosts[c]->sock_connected = 1;
+            }
+            int flag = fcntl(sock, F_GETFL, 0);
+            fcntl(sock, F_SETFL, flag | O_NONBLOCK);
 
             hosts[c]->server_fd = sock;
             hosts[c]->server = server;
@@ -169,32 +183,9 @@ int main(int argc, const char *argv[])
         }
 
         for(c=1; c<=5; c++) {
-            if(hosts[c] != NULL && hosts[c]->is_connect == 0) {
-                if(connect(hosts[c]->server_fd, (struct sockaddr *)&(hosts[c]->server) , sizeof(hosts[c]->server)) < 0) {
-                    printf("Errono %d\n", errno);
-                    if(errno == EISCONN) {
-                        hosts[c]->is_connect = 1;
-                    }
-                }
-            }
             if(hosts[c] != NULL && FD_ISSET(hosts[c]->server_fd, &rfds)) {
 
-                if(hosts[c]->sock_connected == 0) {
-                    sock4pkt_t pkt;
-                    get_sock(hosts[c]->server_fd, &pkt);
-                    printf("Sock pkt get<br>\n");
-                    printf("pkt.cd : %d\n", pkt.cd);
-                    fflush(stdout);
-                    if(pkt.cd == 90) {
-                        // socket accept
-                        hosts[c]->sock_connected = 1;
-                    } else {
-                        exit_flags[c] = 1;
-                    }
-                    continue;
-                }
-
-                char buffer[10001];
+               char buffer[10001];
                 bzero(buffer, 10001);
                 if(read_line(hosts[c]->server_fd, buffer) > 0) {
                     if(strncmp(buffer, "% ", 2) == 0) {

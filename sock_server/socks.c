@@ -1,11 +1,9 @@
 #include "socks.h"
 
-
-
 void sock_req(int sock_fd, sock4pkt_t* pkt) {
     byte_t buffer[1024];
     bzero(buffer, 1024);
-    read(sock_fd, buffer, 1024);
+    int len = read(sock_fd, buffer, 1024);
     pkt->vn = buffer[0] ;
     pkt->cd = buffer[1] ;
     pkt->dst_port = buffer[2] << 8 | buffer[3] ;
@@ -23,6 +21,17 @@ void sock_req(int sock_fd, sock4pkt_t* pkt) {
             strcpy(pkt->domain_name, &(buffer[8 + len + 1]));
         }
 
+    }
+    printf("Pkt length: %d\n", len);
+    printf("VN: %d, ", pkt->vn);
+    printf("CD: %d, ", pkt->cd);
+    printf("DST IP: %u.%u.%u.%u, ", buffer[4], buffer[5], buffer[6], buffer[7]);
+    printf("DST PORT: %d, ", pkt->dst_port);
+    printf("USERID: %s", pkt->user_id);
+    if(buffer[4] == 0 && buffer[5] == 0 && buffer[6] == 0) {
+        printf(", DOMAIN NAME: %s\n", pkt->domain_name);
+    } else {
+        printf("\n");
     }
 }
 
@@ -117,6 +126,34 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
         }
 
 
+    }
+
+}
+
+int firewall_check(unsigned int dst_ip) {
+    FILE* file = fopen("socks.conf", "r");
+    char buf[1024];
+    fscanf(file, "%s", buf);
+    fclose(file);
+
+    printf("Filewall %s\n", buf);
+
+    if(strcmp(buf, "NCTU") == 0) {
+        printf("%d, %d\n", dst_ip >> 24, dst_ip >> 16 & 0xff);
+        if((dst_ip >> 24) == 140 && (dst_ip >> 16 & 0xff) == 113) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if(strcmp(buf, "NCHU") == 0) {
+        if((dst_ip >> 24) == 140 && (dst_ip >> 16 & 0xff) == 114) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        // grant all
+        return 1;
     }
 
 }

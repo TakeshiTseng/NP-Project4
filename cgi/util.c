@@ -123,3 +123,25 @@ void replace_to_html(char* str) {
     strcpy(str, tmp_str);
 
 }
+
+
+int get_ip_num(char* ip, int pos) {
+
+    int c;
+    int num = 0;
+    int len = strlen(ip);
+    int pos_t = 0;
+    for(c=0; c<len; c++) {
+        if(pos_t == pos && ip[c] == '.') {
+            break;
+        }
+        if(pos_t == pos) {
+            num += ip[c] - '0';
+            num *= 10;
+        }
+        if(pos_t != pos && ip[c] == '.') {
+            pos_t++;
+        }
+    }
+    return num/10;
+}

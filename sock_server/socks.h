@@ -16,7 +16,7 @@ struct sock4pkt {
     int vn;
     int cd;
     int dst_port;
-    int dst_ip;
+    unsigned int dst_ip;
     char* user_id;
     char* domain_name;
 };
