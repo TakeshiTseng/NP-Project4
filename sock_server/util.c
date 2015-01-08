@@ -3,6 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 
 void str_split(char* str, const char* tok, char*** res, int* count) {
 
@@ -170,7 +176,7 @@ int get_ip_by_domain_name(char* domain_name) {
       struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
       addr = &(ipv4->sin_addr);
 
-      ip = addr.s_addr;
+      ip = (ipv4->sin_addr).s_addr;
     }
   }
 
