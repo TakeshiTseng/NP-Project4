@@ -80,12 +80,13 @@ int main(int argc, const char *argv[])
                 // Bind mode! Let's rock!!!
                 struct sockaddr_in bind_server;
 
-                port = 9000 + rand() % 100;
+                port = 50000 + rand() % 1000;
                 int bind_sc_fd = create_server_sock(port, &bind_server);
 
                 while(bind_sc_fd < 0) {
                     sleep(1);
-                    port = 9000 + rand() % 100;
+                    port = 50000 + rand() % 1000;
+                    printf("[Bind] Rebind to port : %d\n", port);
                     bind_sc_fd = create_server_sock(port, &bind_server);
                 }
 
