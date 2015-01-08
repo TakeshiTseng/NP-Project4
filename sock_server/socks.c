@@ -21,6 +21,8 @@ void sock_req(int sock_fd, sock4pkt_t* pkt) {
 
         bzero(pkt->domain_name, 512);
         strcpy(pkt->domain_name, &(buffer[pos_of_dn]));
+
+        pkt->dst_ip = htonl(get_ip_by_domain_name(pkt->domain_name));
     }
 
     printf("Pkt length: %d\n", len);
