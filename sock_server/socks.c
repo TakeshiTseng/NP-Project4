@@ -83,16 +83,21 @@ int create_server_sock(int port, struct sockaddr_in* sock_server) {
 }
 
 void exchange_socket_data(int sock_fd1, int sock_fd2) {
-
+    int is_close[2] = {0, 0};
 
     char buffer[1048576];
     fd_set rfds, afds;
     int nfds = sock_fd2>sock_fd1?sock_fd2+1:sock_fd1+1;
 
     FD_ZERO(&afds);
-    FD_SET(sock_fd2, &afds);
     FD_SET(sock_fd1, &afds);
+    FD_SET(sock_fd2, &afds);
+    
     while(1 == 1) {
+
+        if(is_close[0] == 1 && is_close[1] == 1) {
+            break;
+        }
 
         memcpy(&rfds, &afds, sizeof(rfds));
 
@@ -107,10 +112,11 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
 
         if(FD_ISSET(sock_fd1, &rfds)) {
             int len = read(sock_fd1, buffer, 1048576);
-            if(len > 0){
+            if(len > 0 && is_close[1] == 0){
                 write(sock_fd2, buffer, len);
             }
             if(len == 0) {
+                is_close[0] = 1;
                 close(sock_fd1);
                 FD_CLR(sock_fd1, &afds);
             }
@@ -118,10 +124,11 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
 
         if(FD_ISSET(sock_fd2, &rfds)) {
             int len = read(sock_fd2, buffer, 1048576);
-            if(len > 0){
+            if(len > 0 && is_close[0] == 0){
                 write(sock_fd1, buffer, len);
             }
             if(len == 0) {
+                is_close[1] = 1;
                 close(sock_fd2);
                 FD_CLR(sock_fd2, &afds);
             }
