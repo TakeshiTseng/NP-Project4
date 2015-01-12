@@ -142,26 +142,17 @@ void exchange_socket_data(int sock_fd1, int sock_fd2) {
 
 int firewall_check(unsigned int dst_ip) {
     FILE* file = fopen("socks.conf", "r");
-    char buf[1024];
-    fscanf(file, "%s", buf);
+    int grant_ip[4];
+    fscanf(file, "%d.%d.%d.%d", grant_ip[0], grant_ip[1], grant_ip[2], grant_ip[3]);
     fclose(file);
 
+    int result = 1;
+    result *= (grant_ip[0] == 0 || ((dst_ip >> 24) & 0xff) == grant_ip[0]);
+    result *= (grant_ip[1] == 0 || ((dst_ip >> 16) & 0xff) == grant_ip[1]);
+    result *= (grant_ip[2] == 0 || ((dst_ip >>  8) & 0xff) == grant_ip[2]);
+    result *= (grant_ip[3] == 0 || ((dst_ip >>  0) & 0xff) == grant_ip[3]);
+    
+    return result;
 
-    if(strcmp(buf, "NCTU") == 0) {
-        if((dst_ip >> 24) == 140 && (dst_ip >> 16 & 0xff) == 113) {
-            return 1;
-        } else {
-            return 0;
-        }
-    } else if(strcmp(buf, "NCHU") == 0) {
-        if((dst_ip >> 24) == 140 && (dst_ip >> 16 & 0xff) == 114) {
-            return 1;
-        } else {
-            return 0;
-        }
-    } else {
-        // grant all
-        return 1;
-    }
 
 }

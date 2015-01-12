@@ -63,13 +63,16 @@ int main(int argc, const char *argv[])
                 server.sin_port = htons(pkt.dst_port);
 
 
-                if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
-                    sock_reply(client_sock, pkt, 0);
-                    printf("SOCKS_CONNECT DENY ....\n");
-                } else if(firewall_check(pkt.dst_ip) == 1){
-                    sock_reply(client_sock, pkt, 1);
-                    printf("SOCKS_CONNECT GRANTED ....\n");
-                    exchange_socket_data(sock, client_sock);
+                if(firewall_check(pkt.dst_ip) == 1){
+                    if(connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0) {
+                        sock_reply(client_sock, pkt, 0);
+                        printf("SOCKS_CONNECT DENY ....\n");
+                    } else {
+                        sock_reply(client_sock, pkt, 1);
+                        printf("SOCKS_CONNECT GRANTED ....\n");
+                        exchange_socket_data(sock, client_sock);
+                    }
+                    
                 } else {
                     sock_reply(client_sock, pkt, 0);
                     printf("SOCKS_CONNECT DENY ....\n");

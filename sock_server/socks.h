@@ -30,4 +30,5 @@ void connect_mode(int client_sock, sock4pkt_t pkt);
 void bind_mode(int client_sock, sock4pkt_t pkt);
 
 void exchange_socket_data(int sock_fd1, int sock_fd2);
+int firewall_check(unsigned int dst_ip);
 #endif
