@@ -153,6 +153,4 @@ int firewall_check(unsigned int dst_ip) {
     result *= (grant_ip[3] == 0 || ((dst_ip >>  0) & 0xff) == grant_ip[3]);
     
     return result;
-
-
 }
